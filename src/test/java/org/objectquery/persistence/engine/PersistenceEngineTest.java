@@ -5,6 +5,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
 import org.junit.Test;
+import org.objectquery.persistence.engine.domain.Organization;
+import org.objectquery.persistence.engine.domain.Person;
 
 public class PersistenceEngineTest {
 
@@ -25,6 +27,24 @@ public class PersistenceEngineTest {
 		assertNotNull(instance);
 		Person instance1 = engine.newInstance(Person.class, 1);
 		assertNotNull(instance1);
+		engine.close();
+		factory.close();
+	}
+
+	@Test
+	public void createMultipleEntityTest() {
+		PersistenceEngineFactory factory = new PersistenceEngineFactory();
+		PersistenceEngine engine = factory.createEngine();
+		Person instance = engine.newInstance(Person.class);
+		assertNotNull(instance);
+		Person instance1 = engine.newInstance(Person.class, 1);
+		assertNotNull(instance1);
+
+		Organization instance2 = engine.newInstance(Organization.class);
+		assertNotNull(instance2);
+		Organization instance3 = engine.newInstance(Organization.class, 1);
+		assertNotNull(instance3);
+
 		engine.close();
 		factory.close();
 	}

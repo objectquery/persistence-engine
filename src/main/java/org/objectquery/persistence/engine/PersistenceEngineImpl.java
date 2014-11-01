@@ -29,12 +29,12 @@ public class PersistenceEngineImpl implements PersistenceEngine {
 	public <T> T newInstance(Class<T> class1, Object id) {
 		T instance = newInstance(class1);
 		((PersistentEntity) instance).__set__id(id);
-		instance = (T) keeper.addInstanceIfNeeded(id, instance);
+		instance = (T) keeper.addInstanceIfNeeded(class1, id, instance);
 		return instance;
 	}
 
 	public <T> T get(Class<T> class1, Object id) {
-		return (T) keeper.getInstanceById(id);
+		return (T) keeper.getInstanceById(class1, id);
 	}
 
 }

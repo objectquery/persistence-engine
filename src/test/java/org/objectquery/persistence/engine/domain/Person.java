@@ -1,4 +1,4 @@
-package org.objectquery.persistence.engine;
+package org.objectquery.persistence.engine.domain;
 
 public interface Person {
 
