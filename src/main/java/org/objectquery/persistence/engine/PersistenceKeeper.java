@@ -2,8 +2,8 @@ package org.objectquery.persistence.engine;
 
 public interface PersistenceKeeper {
 
-	Object onFieldRead(String fieldName, Object prev);
+	<T> T onFieldRead(String fieldName, T prev);
 
-	Object onFieldWrite(String fieldName, Object prev, Object newValue);
+	<T> T onFieldWrite(String fieldName, T prev, T newValue);
 
 }

@@ -1,5 +1,6 @@
 package org.objectquery.persistence.engine;
 
+import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtConstructor;
@@ -7,6 +8,7 @@ import javassist.CtField;
 import javassist.CtMethod;
 import javassist.CtNewConstructor;
 import javassist.CtNewMethod;
+import javassist.NotFoundException;
 
 public class JavassistClassFactory implements ClassFactory {
 
@@ -39,12 +41,13 @@ public class JavassistClassFactory implements ClassFactory {
 							fieldName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
 						else
 							fieldName = Character.toLowerCase(method.getName().charAt(2)) + method.getName().substring(3);
-						CtField field = new CtField(method.getReturnType(), fieldName, newClass);
-						newClass.addField(field);
-						newClass.addMethod(CtNewMethod.getter(method.getName(), field));
-						newClass.addMethod(CtNewMethod.setter("set" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1), field));
+						CtField field = getOrCreate(method.getReturnType(), fieldName, newClass);
+						newClass.addMethod(createGetter(field, method));
+					} else if (method.getName().startsWith("set")) {
+						String fieldName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
+						CtField field = getOrCreate(method.getParameterTypes()[0], fieldName, newClass);
+						newClass.addMethod(createSetter(field, method));
 					}
-					// newClass.
 				}
 				newClass.toClass();
 			}
@@ -52,5 +55,31 @@ public class JavassistClassFactory implements ClassFactory {
 		} catch (Exception e) {
 			throw new PersistenceException(e);
 		}
+	}
+
+	private CtMethod createSetter(CtField field, CtMethod method) throws CannotCompileException, NotFoundException {
+		String body = field.getName() + "= (" + field.getType().getName() + ")__$persistence.onFieldWrite(\"" + field.getName() + "\"," + field.getName()
+				+ ",$1);";
+		return CtNewMethod.make(method.getReturnType(), method.getName(), method.getParameterTypes(), method.getExceptionTypes(), body,
+				field.getDeclaringClass());
+	}
+
+	private CtField getOrCreate(CtClass filedType, String name, CtClass owner) throws CannotCompileException {
+		CtField field = null;
+		try {
+			field = owner.getField(name);
+		} catch (NotFoundException e) {
+
+		}
+		if (field == null) {
+			field = new CtField(filedType, name, owner);
+			owner.addField(field);
+		}
+		return field;
+	}
+
+	private CtMethod createGetter(CtField field, CtMethod method) throws CannotCompileException, NotFoundException {
+		String body = " return ($r)__$persistence.onFieldRead(\"" + field.getName() + "\"," + field.getName() + ");";
+		return CtNewMethod.make(field.getType(), method.getName(), method.getParameterTypes(), method.getExceptionTypes(), body, field.getDeclaringClass());
 	}
 }
