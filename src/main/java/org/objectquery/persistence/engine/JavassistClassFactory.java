@@ -32,29 +32,37 @@ public class JavassistClassFactory implements ClassFactory {
 				newClass.addField(persistenceField);
 				CtConstructor cons = CtNewConstructor.make(new CtClass[] { persKeeper }, null, "__$persistence = $1;", newClass);
 				newClass.addConstructor(cons);
-				newClass.addInterface(inter);
 
-				for (CtMethod method : inter.getDeclaredMethods()) {
-					if (method.getName().startsWith("get") || method.getName().startsWith("is")) {
-						String fieldName;
-						if (method.getName().startsWith("get"))
-							fieldName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
-						else
-							fieldName = Character.toLowerCase(method.getName().charAt(2)) + method.getName().substring(3);
-						CtField field = getOrCreate(method.getReturnType(), fieldName, newClass);
-						newClass.addMethod(createGetter(field, method));
-					} else if (method.getName().startsWith("set")) {
-						String fieldName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
-						CtField field = getOrCreate(method.getParameterTypes()[0], fieldName, newClass);
-						newClass.addMethod(createSetter(field, method));
-					}
-				}
+				implementInterface(inter, newClass);
 				newClass.toClass();
 			}
 			return classPoll.getClassLoader().loadClass(class1.getName() + "$Impl");
 		} catch (Exception e) {
 			throw new PersistenceException(e);
 		}
+	}
+
+	private void implementInterface(CtClass inter, CtClass newClass) throws CannotCompileException, NotFoundException {
+		newClass.addInterface(inter);
+
+		for (CtClass superInt : inter.getInterfaces())
+			implementInterface(superInt, newClass);
+		for (CtMethod method : inter.getDeclaredMethods()) {
+			if (method.getName().startsWith("get") || method.getName().startsWith("is")) {
+				String fieldName;
+				if (method.getName().startsWith("get"))
+					fieldName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
+				else
+					fieldName = Character.toLowerCase(method.getName().charAt(2)) + method.getName().substring(3);
+				CtField field = getOrCreate(method.getReturnType(), fieldName, newClass);
+				newClass.addMethod(createGetter(field, method));
+			} else if (method.getName().startsWith("set")) {
+				String fieldName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
+				CtField field = getOrCreate(method.getParameterTypes()[0], fieldName, newClass);
+				newClass.addMethod(createSetter(field, method));
+			}
+		}
+
 	}
 
 	private CtMethod createSetter(CtField field, CtMethod method) throws CannotCompileException, NotFoundException {

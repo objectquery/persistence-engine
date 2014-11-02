@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
 import org.junit.Test;
+import org.objectquery.persistence.engine.domain.Employee;
 import org.objectquery.persistence.engine.domain.Organization;
 import org.objectquery.persistence.engine.domain.Person;
 
@@ -68,6 +69,19 @@ public class PersistenceEngineTest {
 		assertNotNull(instance);
 		instance.setName("name");
 		assertEquals("name", instance.getName());
+	}
+
+	@Test
+	public void createSetGetValueHierarchy() {
+		PersistenceEngineFactory factory = new PersistenceEngineFactory();
+		PersistenceEngine engine = factory.createEngine();
+		Employee instance = engine.newInstance(Employee.class);
+		assertNotNull(instance);
+		instance.setName("name");
+		assertEquals("name", instance.getName());
+		instance.setPassId("id");
+		assertEquals("id", instance.getPassId());
+
 	}
 
 }
