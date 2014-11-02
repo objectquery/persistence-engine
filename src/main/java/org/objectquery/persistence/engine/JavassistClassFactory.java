@@ -2,10 +2,11 @@ package org.objectquery.persistence.engine;
 
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtConstructor;
 import javassist.CtField;
 import javassist.CtMethod;
+import javassist.CtNewConstructor;
 import javassist.CtNewMethod;
-import javassist.NotFoundException;
 
 public class JavassistClassFactory implements ClassFactory {
 
@@ -24,11 +25,11 @@ public class JavassistClassFactory implements ClassFactory {
 			CtClass newClass = classPoll.getOrNull(class1.getName() + "$Impl");
 			if (newClass == null) {
 				newClass = classPoll.makeClass(class1.getName() + "$Impl");
-				CtField idField = new CtField(classPoll.get("java.lang.Object"), "__$id", newClass);
-				newClass.addInterface(classPoll.get(PersistentEntity.class.getName()));
-				newClass.addField(idField);
-				newClass.addMethod(CtNewMethod.getter("__get__id", idField));
-				newClass.addMethod(CtNewMethod.setter("__set__id", idField));
+				CtClass persKeeper = classPoll.get(PersistenceKeeper.class.getName());
+				CtField persistenceField = new CtField(persKeeper, "__$persistence", newClass);
+				newClass.addField(persistenceField);
+				CtConstructor cons = CtNewConstructor.make(new CtClass[] { persKeeper }, null, "__$persistence = $1;", newClass);
+				newClass.addConstructor(cons);
 				newClass.addInterface(inter);
 
 				for (CtMethod method : inter.getDeclaredMethods()) {

@@ -3,6 +3,14 @@ package org.objectquery.persistence.engine;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
+/**
+ * Partial implementation of a weak value hashmap, mostly copied from
+ * @{WeakHashMap}
+ * 
+ * 
+ * @author tglman
+ *
+ */
 public class WeakValueHashMap {
 
 	private Entry<Object, Object>[] table;

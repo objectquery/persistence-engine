@@ -17,19 +17,25 @@ public class PersistenceEngineImpl implements PersistenceEngine {
 
 	}
 
+	protected PersistenceKeeper newRecord(Object id) {
+		return new PersistenceKeeperImpl(id);
+	}
+
 	public <T> T newInstance(Class<T> class1) {
-		Class<?> clazz = classFactory.getRealClass(class1);
-		try {
-			return (T) clazz.newInstance();
-		} catch (Exception e) {
-			throw new PersistenceException(e);
-		}
+		return newInstance(class1, null);
 	}
 
 	public <T> T newInstance(Class<T> class1, Object id) {
-		T instance = newInstance(class1);
-		((PersistentEntity) instance).__set__id(id);
-		instance = (T) keeper.addInstanceIfNeeded(class1, id, instance);
+		T instance;
+		Class<?> clazz = classFactory.getRealClass(class1);
+		try {
+			instance = (T) clazz.getConstructor(PersistenceKeeper.class).newInstance(newRecord(id));
+		} catch (Exception e) {
+			throw new PersistenceException(e);
+		}
+		// ((PersistentEntity) instance).__set__id(id);
+		if (id != null)
+			instance = (T) keeper.addInstanceIfNeeded(class1, id, instance);
 		return instance;
 	}
 
