@@ -5,7 +5,9 @@ import static org.junit.Assert.*;
 import java.lang.reflect.Modifier;
 
 import org.junit.Test;
+import org.objectquery.persistence.engine.domain.Company;
 import org.objectquery.persistence.engine.domain.Employee;
+import org.objectquery.persistence.engine.domain.Organization;
 import org.objectquery.persistence.engine.domain.Person;
 
 public class ClassFactoryTest {
@@ -25,6 +27,16 @@ public class ClassFactoryTest {
 		Class<?> clazz = factory.getRealClass(Employee.class);
 		assertTrue(Person.class.isAssignableFrom(clazz));
 		assertTrue(Employee.class.isAssignableFrom(clazz));
+		assertFalse(clazz.isInterface());
+		assertFalse((clazz.getModifiers() & Modifier.ABSTRACT) != 0);
+	}
+
+	@Test
+	public void createHierarchyClassDobuleDeclaredFieldTest() throws InstantiationException, IllegalAccessException {
+		ClassFactory factory = new JavassistClassFactory();
+		Class<?> clazz = factory.getRealClass(Company.class);
+		assertTrue(Organization.class.isAssignableFrom(clazz));
+		assertTrue(Company.class.isAssignableFrom(clazz));
 		assertFalse(clazz.isInterface());
 		assertFalse((clazz.getModifiers() & Modifier.ABSTRACT) != 0);
 	}

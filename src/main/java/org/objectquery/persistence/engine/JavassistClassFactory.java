@@ -49,6 +49,12 @@ public class JavassistClassFactory implements ClassFactory {
 			implementInterface(superInt, newClass);
 		for (CtMethod method : inter.getDeclaredMethods()) {
 			if (method.getName().startsWith("get") || method.getName().startsWith("is")) {
+				try {
+					newClass.getDeclaredMethod(method.getName(), method.getParameterTypes());
+					continue;
+				} catch (NotFoundException nf) {
+
+				}
 				String fieldName;
 				if (method.getName().startsWith("get"))
 					fieldName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
@@ -57,6 +63,13 @@ public class JavassistClassFactory implements ClassFactory {
 				CtField field = getOrCreate(method.getReturnType(), fieldName, newClass);
 				newClass.addMethod(createGetter(field, method));
 			} else if (method.getName().startsWith("set")) {
+				try {
+					newClass.getDeclaredMethod(method.getName(), method.getParameterTypes());
+					continue;
+				} catch (NotFoundException nf) {
+
+				}
+
 				String fieldName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
 				CtField field = getOrCreate(method.getParameterTypes()[0], fieldName, newClass);
 				newClass.addMethod(createSetter(field, method));
