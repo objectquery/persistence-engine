@@ -81,7 +81,8 @@ public class PersistenceEngineTest {
 		assertEquals("name", instance.getName());
 		instance.setPassId("id");
 		assertEquals("id", instance.getPassId());
-
 	}
 
+	
+	
 }

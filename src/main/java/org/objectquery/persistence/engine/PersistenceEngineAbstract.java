@@ -1,15 +1,11 @@
 package org.objectquery.persistence.engine;
 
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.WeakHashMap;
-
-public class PersistenceEngineImpl implements PersistenceEngine {
+public abstract class PersistenceEngineAbstract implements PersistenceEngine {
 
 	private ClassFactory classFactory;
 	private InstanceKeeper keeper = new InstanceKeeper();
 
-	public PersistenceEngineImpl(ClassFactory classFactory) {
+	public PersistenceEngineAbstract(ClassFactory classFactory) {
 		this.classFactory = classFactory;
 	}
 
@@ -17,9 +13,9 @@ public class PersistenceEngineImpl implements PersistenceEngine {
 
 	}
 
-	protected PersistenceKeeper newRecord(Object id) {
-		return new PersistenceKeeperImpl(id);
-	}
+	protected abstract PersistenceKeeper newRecord(Object id);
+
+	protected abstract PersistenceKeeper loadRecord(Object id);
 
 	public <T> T newInstance(Class<T> class1) {
 		return newInstance(class1, null);
@@ -33,14 +29,16 @@ public class PersistenceEngineImpl implements PersistenceEngine {
 		} catch (Exception e) {
 			throw new PersistenceException(e);
 		}
-		// ((PersistentEntity) instance).__set__id(id);
 		if (id != null)
 			instance = (T) keeper.addInstanceIfNeeded(class1, id, instance);
 		return instance;
 	}
 
 	public <T> T get(Class<T> class1, Object id) {
-		return (T) keeper.getInstanceById(class1, id);
+		Object instance = keeper.getInstanceById(class1, id);
+		if (instance == null)
+			instance = keeper.addInstanceIfNeeded(class1, id, loadRecord(id));
+		return (T) instance;
 	}
 
 }

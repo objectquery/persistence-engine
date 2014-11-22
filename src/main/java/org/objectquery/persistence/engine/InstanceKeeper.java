@@ -7,8 +7,6 @@ public class InstanceKeeper {
 
 	private Map<Class<?>, WeakValueHashMap> objects = new HashMap<Class<?>, WeakValueHashMap>();
 
-	// private WeakValueHashMap objects = new WeakValueHashMap();
-
 	public Object getInstanceById(Class<?> clazz, Object id) {
 		WeakValueHashMap map = getByClass(clazz);
 		return map.get(id);
