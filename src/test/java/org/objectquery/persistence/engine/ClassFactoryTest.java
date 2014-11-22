@@ -1,9 +1,13 @@
 package org.objectquery.persistence.engine;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.Set;
 
 import org.junit.Test;
 import org.objectquery.persistence.engine.domain.Company;
@@ -50,6 +54,18 @@ public class ClassFactoryTest {
 		MetaClass meta = factory.getClassMetadata(Employee.class);
 		assertEquals("org.objectquery.persistence.engine.domain.Employee", meta.getName());
 		assertEquals(clazz, meta.getRealClass());
+		Set<MetaClass> supers = meta.getSupers();
+		assertEquals(1, supers.size());
+		MetaClass superMata = supers.iterator().next();
+		assertEquals(factory.getRealClass(Person.class), superMata.getRealClass());
+		assertNotNull(superMata.getField("name"));
+		assertEquals("name", superMata.getField("name").getName());
+		assertEquals("java.lang.String", superMata.getField("name").getType().getName());
+		Collection<MetaField> fields = meta.getFields();
+		assertEquals(1, fields.size());
+		assertNotNull(meta.getField("passId"));
+		assertEquals("passId", meta.getField("passId").getName());
+		assertEquals("java.lang.String", meta.getField("passId").getType().getName());
 	}
 
 	@Test
@@ -59,14 +75,19 @@ public class ClassFactoryTest {
 		MetaClass meta = factory.getClassMetadata(EmployeeMetadata.class);
 		assertEquals("org.objectquery.persistence.engine.domain.EmployeeMetadata", meta.getName());
 		assertEquals(clazz, meta.getRealClass());
+		Set<MetaClass> supers = meta.getSupers();
+		assertEquals(1, supers.size());
+		MetaClass superMata = supers.iterator().next();
+		assertEquals(factory.getRealClass(Person.class), superMata.getRealClass());
+		assertNotNull(superMata.getField("name"));
+		assertEquals("name", superMata.getField("name").getName());
+		assertEquals("java.lang.String", superMata.getField("name").getType().getName());
 		Collection<MetaField> fields = meta.getFields();
-		assertEquals(2, fields.size());
-		assertNotNull(meta.getField("name"));
-		assertEquals("name", meta.getField("name").getName());
-		assertEquals("java.lang.String", meta.getField("name").getType().getName());
+		assertEquals(1, fields.size());
 		assertNotNull(meta.getField("passId"));
 		assertEquals("passId", meta.getField("passId").getName());
 		assertEquals("java.lang.String", meta.getField("passId").getType().getName());
+
 	}
 
 }

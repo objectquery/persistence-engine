@@ -25,45 +25,52 @@ public class JavassistClassFactory implements ClassFactory {
 	public Class<?> getRealClass(Class<?> interfa) {
 		if (!interfa.isInterface())
 			throw new PersistenceException(interfa + " is not an interfaces");
+		return getRealClass(interfa.getName());
+	}
+
+	private Class<?> getRealClass(String interName) {
 		try {
-			CtClass newClass = classPoll.getOrNull(interfa.getName() + "$Impl");
+			Class<?> realClass;
+			CtClass newClass = classPoll.getOrNull(interName + "$Impl");
 			if (newClass == null) {
-				CtClass inter = classPoll.get(interfa.getName());
-				MetaClass newMetaClass = getOrCreateMetaClass(interfa.getName());
-				newClass = classPoll.makeClass(interfa.getName() + "$Impl");
+				CtClass inter = classPoll.get(interName);
+				MetaClass newMetaClass = getOrCreateMetaClass(interName);
+				newClass = classPoll.makeClass(interName + "$Impl");
 				CtClass persKeeper = classPoll.get(PersistenceKeeper.class.getName());
 				CtField persistenceField = new CtField(persKeeper, "__$persistence", newClass);
 				newClass.addField(persistenceField);
 				CtConstructor cons = CtNewConstructor.make(new CtClass[] { persKeeper }, null, "__$persistence = $1;", newClass);
 				newClass.addConstructor(cons);
-
-				implementInterface(inter, newClass, newMetaClass);
-				Class<?> res = newClass.toClass();
-				newMetaClass.setRealClass(res);
+				implementInterface(inter, newClass);
+				realClass = newClass.toClass();
+				checkAndCreateMetadata(interName, realClass);
+				newMetaClass.setRealClass(realClass);
 			} else {
-				checkAndCreateMetadata(interfa, classPoll.getClassLoader().loadClass(interfa.getName() + "$Impl"));
+				realClass = classPoll.getClassLoader().loadClass(interName + "$Impl");
+				checkAndCreateMetadata(interName, realClass);
 			}
-			return classPoll.getClassLoader().loadClass(interfa.getName() + "$Impl");
+			return realClass;
+
 		} catch (Exception e) {
 			throw new PersistenceException(e);
 		}
 	}
 
-	private void checkAndCreateMetadata(Class<?> interfa, Class<?> newClass) throws NotFoundException {
-		MetaClass metaClass = metadata.get(interfa.getName());
-		if (metaClass == null) {
-			metaClass = new MetaClass(interfa.getName());
-		}
+	private void checkAndCreateMetadata(String name, Class<?> newClass) throws NotFoundException {
+		MetaClass metaClass = getOrCreateMetaClass(name);
 		if (metaClass.getRealClass() == null) {
-			this.metadata.put(interfa.getName(), metaClass);
-			implementInterfaceMetadata(classPoll.get(interfa.getName()), newClass, metaClass);
+			implementInterfaceMetadata(classPoll.get(name), metaClass);
 			metaClass.setRealClass(newClass);
 		}
 	}
 
-	private void implementInterfaceMetadata(CtClass inter, Class<?> newClass, MetaClass metaClass) throws NotFoundException {
-		for (CtClass superInt : inter.getInterfaces())
-			implementInterfaceMetadata(superInt, newClass, metaClass);
+	private void implementInterfaceMetadata(CtClass inter, MetaClass metaClass) throws NotFoundException {
+		for (CtClass superInt : inter.getInterfaces()) {
+			MetaClass superMeta = getOrCreateMetaClass(superInt.getName());
+			if (metaClass.getRealClass() == null)
+				getRealClass(superInt.getName());
+			metaClass.addSuper(superMeta);
+		}
 		for (CtMethod method : inter.getDeclaredMethods()) {
 			if (method.getName().startsWith("get") || method.getName().startsWith("is")) {
 				String fieldName;
@@ -77,11 +84,12 @@ public class JavassistClassFactory implements ClassFactory {
 		}
 	}
 
-	private void implementInterface(CtClass inter, CtClass newClass, MetaClass newMetaClass) throws CannotCompileException, NotFoundException {
+	private void implementInterface(CtClass inter, CtClass newClass) throws CannotCompileException, NotFoundException {
 		newClass.addInterface(inter);
 
-		for (CtClass superInt : inter.getInterfaces())
-			implementInterface(superInt, newClass, newMetaClass);
+		for (CtClass superInt : inter.getInterfaces()) {
+			implementInterface(superInt, newClass);
+		}
 		for (CtMethod method : inter.getDeclaredMethods()) {
 			if (method.getName().startsWith("get") || method.getName().startsWith("is")) {
 				try {
@@ -95,7 +103,7 @@ public class JavassistClassFactory implements ClassFactory {
 					fieldName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
 				else
 					fieldName = Character.toLowerCase(method.getName().charAt(2)) + method.getName().substring(3);
-				CtField field = getOrCreate(method.getReturnType(), fieldName, newClass, newMetaClass);
+				CtField field = getOrCreate(method.getReturnType(), fieldName, newClass);
 				newClass.addMethod(createGetter(field, method));
 			} else if (method.getName().startsWith("set")) {
 				try {
@@ -106,7 +114,7 @@ public class JavassistClassFactory implements ClassFactory {
 				}
 
 				String fieldName = Character.toLowerCase(method.getName().charAt(3)) + method.getName().substring(4);
-				CtField field = getOrCreate(method.getParameterTypes()[0], fieldName, newClass, newMetaClass);
+				CtField field = getOrCreate(method.getParameterTypes()[0], fieldName, newClass);
 				newClass.addMethod(createSetter(field, method));
 			}
 		}
@@ -120,7 +128,7 @@ public class JavassistClassFactory implements ClassFactory {
 				field.getDeclaringClass());
 	}
 
-	private CtField getOrCreate(CtClass filedType, String name, CtClass owner, MetaClass newMetaClass) throws CannotCompileException {
+	private CtField getOrCreate(CtClass filedType, String name, CtClass owner) throws CannotCompileException {
 		CtField field = null;
 		try {
 			field = owner.getField(name);
@@ -128,7 +136,6 @@ public class JavassistClassFactory implements ClassFactory {
 
 		}
 		if (field == null) {
-			newMetaClass.addField(name, getOrCreateMetaClass(filedType.getName()));
 			field = new CtField(filedType, name, owner);
 			owner.addField(field);
 		}
