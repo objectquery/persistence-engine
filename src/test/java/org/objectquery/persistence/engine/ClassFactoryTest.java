@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
@@ -15,6 +16,7 @@ import org.objectquery.persistence.engine.domain.Employee;
 import org.objectquery.persistence.engine.domain.EmployeeMetadata;
 import org.objectquery.persistence.engine.domain.Organization;
 import org.objectquery.persistence.engine.domain.Person;
+import org.objectquery.persistence.engine.domain.SelfEmployed;
 
 public class ClassFactoryTest {
 
@@ -87,7 +89,28 @@ public class ClassFactoryTest {
 		assertNotNull(meta.getField("passId"));
 		assertEquals("passId", meta.getField("passId").getName());
 		assertEquals("java.lang.String", meta.getField("passId").getType().getName());
+	}
 
+	@Test
+	public void createMetaClassDoubleParentsTest() throws InstantiationException, IllegalAccessException {
+		ClassFactory factory = new JavassistClassFactory();
+		Class<?> clazz = factory.getRealClass(SelfEmployed.class);
+		MetaClass meta = factory.getClassMetadata(SelfEmployed.class);
+		assertEquals("org.objectquery.persistence.engine.domain.SelfEmployed", meta.getName());
+		assertEquals(clazz, meta.getRealClass());
+		Set<MetaClass> supers = meta.getSupers();
+		assertEquals(2, supers.size());
+		Iterator<MetaClass> iterator = supers.iterator();
+		MetaClass superMata = iterator.next();
+		assertEquals(factory.getRealClass(Company.class), superMata.getRealClass());
+		assertNotNull(superMata.getField("legalName"));
+		assertEquals("legalName", superMata.getField("legalName").getName());
+		assertEquals("java.lang.String", superMata.getField("legalName").getType().getName());
+		superMata = iterator.next();
+		assertEquals(factory.getRealClass(Person.class), superMata.getRealClass());
+		assertNotNull(superMata.getField("name"));
+		assertEquals("name", superMata.getField("name").getName());
+		assertEquals("java.lang.String", superMata.getField("name").getType().getName());
 	}
 
 }

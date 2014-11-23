@@ -2,10 +2,8 @@ package org.objectquery.persistence.engine.domain;
 
 public interface Company extends Organization {
 
-	@Override
-	public String getName();
+	public String getLegalName();
 
-	@Override
-	public void setName(String name);
+	public void setLegalName(String name);
 
 }
