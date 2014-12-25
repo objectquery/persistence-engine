@@ -4,6 +4,8 @@ import java.util.Iterator;
 
 import javax.imageio.spi.ServiceRegistry;
 
+import org.objectquery.persistence.engine.impl.JavassistClassFactory;
+
 public class PersistenceEngineFactory {
 
 	public PersistenceEngine createEngine() {

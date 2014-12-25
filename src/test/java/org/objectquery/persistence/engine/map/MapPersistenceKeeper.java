@@ -1,10 +1,9 @@
-package org.objectquery.persistence.engine.impl;
+package org.objectquery.persistence.engine.map;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.objectquery.persistence.engine.MapTestDb;
-import org.objectquery.persistence.engine.PersistenceKeeperAbstract;
+import org.objectquery.persistence.engine.impl.PersistenceKeeperAbstract;
 
 public class MapPersistenceKeeper extends PersistenceKeeperAbstract {
 

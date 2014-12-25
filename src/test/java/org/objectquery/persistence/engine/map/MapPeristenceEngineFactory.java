@@ -1,4 +1,4 @@
-package org.objectquery.persistence.engine.impl;
+package org.objectquery.persistence.engine.map;
 
 import org.objectquery.persistence.engine.PersistenceEngine;
 import org.objectquery.persistence.engine.PersistenceEngineFactory;

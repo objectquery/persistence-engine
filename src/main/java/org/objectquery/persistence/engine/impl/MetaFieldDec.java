@@ -1,15 +1,15 @@
-package org.objectquery.persistence.engine;
+package org.objectquery.persistence.engine.impl;
 
 import javassist.CtMethod;
 
-public class MetaField {
+public class MetaFieldDec {
 	private MetaClass owner;
 	private String name;
 	private MetaClass type;
 	private CtMethod getter;
 	private CtMethod setter;
 
-	public MetaField(MetaClass owner, String fieldName, MetaClass type) {
+	public MetaFieldDec(MetaClass owner, String fieldName, MetaClass type) {
 		this.owner = owner;
 		this.name = fieldName;
 		this.type = type;

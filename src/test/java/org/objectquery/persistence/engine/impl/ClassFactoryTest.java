@@ -1,4 +1,4 @@
-package org.objectquery.persistence.engine;
+package org.objectquery.persistence.engine.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -7,16 +7,20 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.junit.Test;
+import org.objectquery.persistence.engine.ClassFactory;
+import org.objectquery.persistence.engine.SelfLoader;
 import org.objectquery.persistence.engine.domain.Company;
 import org.objectquery.persistence.engine.domain.Employee;
 import org.objectquery.persistence.engine.domain.EmployeeMetadata;
 import org.objectquery.persistence.engine.domain.Organization;
 import org.objectquery.persistence.engine.domain.Person;
 import org.objectquery.persistence.engine.domain.SelfEmployed;
+import org.objectquery.persistence.engine.impl.JavassistClassFactory;
+import org.objectquery.persistence.engine.impl.MetaClass;
+import org.objectquery.persistence.engine.impl.MetaFieldDec;
 
 public class ClassFactoryTest {
 
@@ -60,14 +64,14 @@ public class ClassFactoryTest {
 		assertEquals(1, supers.size());
 		MetaClass superMata = supers.iterator().next();
 		assertEquals(factory.getRealClass(Person.class), superMata.getRealClass());
-		assertNotNull(superMata.getField("name"));
-		assertEquals("name", superMata.getField("name").getName());
-		assertEquals("java.lang.String", superMata.getField("name").getType().getName());
-		Collection<MetaField> fields = meta.getFields();
+		assertNotNull(superMata.getDeclaredField("name"));
+		assertEquals("name", superMata.getDeclaredField("name").getName());
+		assertEquals("java.lang.String", superMata.getDeclaredField("name").getType().getName());
+		Collection<MetaFieldDec> fields = meta.getDeclaredFields();
 		assertEquals(1, fields.size());
-		assertNotNull(meta.getField("passId"));
-		assertEquals("passId", meta.getField("passId").getName());
-		assertEquals("java.lang.String", meta.getField("passId").getType().getName());
+		assertNotNull(meta.getDeclaredField("passId"));
+		assertEquals("passId", meta.getDeclaredField("passId").getName());
+		assertEquals("java.lang.String", meta.getDeclaredField("passId").getType().getName());
 	}
 
 	@Test
@@ -81,14 +85,14 @@ public class ClassFactoryTest {
 		assertEquals(1, supers.size());
 		MetaClass superMata = supers.iterator().next();
 		assertEquals(factory.getRealClass(Person.class), superMata.getRealClass());
-		assertNotNull(superMata.getField("name"));
-		assertEquals("name", superMata.getField("name").getName());
-		assertEquals("java.lang.String", superMata.getField("name").getType().getName());
-		Collection<MetaField> fields = meta.getFields();
+		assertNotNull(superMata.getDeclaredField("name"));
+		assertEquals("name", superMata.getDeclaredField("name").getName());
+		assertEquals("java.lang.String", superMata.getDeclaredField("name").getType().getName());
+		Collection<MetaFieldDec> fields = meta.getDeclaredFields();
 		assertEquals(1, fields.size());
-		assertNotNull(meta.getField("passId"));
-		assertEquals("passId", meta.getField("passId").getName());
-		assertEquals("java.lang.String", meta.getField("passId").getType().getName());
+		assertNotNull(meta.getDeclaredField("passId"));
+		assertEquals("passId", meta.getDeclaredField("passId").getName());
+		assertEquals("java.lang.String", meta.getDeclaredField("passId").getType().getName());
 	}
 
 	@Test
@@ -103,16 +107,24 @@ public class ClassFactoryTest {
 		for (MetaClass metaClass : supers) {
 			if (metaClass.getName().equals(Company.class.getName())) {
 				assertEquals(factory.getRealClass(Company.class), metaClass.getRealClass());
-				assertNotNull(metaClass.getField("legalName"));
-				assertEquals("legalName", metaClass.getField("legalName").getName());
-				assertEquals("java.lang.String", metaClass.getField("legalName").getType().getName());
+				assertNotNull(metaClass.getDeclaredField("legalName"));
+				assertEquals("legalName", metaClass.getDeclaredField("legalName").getName());
+				assertEquals("java.lang.String", metaClass.getDeclaredField("legalName").getType().getName());
 			} else {
 				assertEquals(factory.getRealClass(Person.class), metaClass.getRealClass());
-				assertNotNull(metaClass.getField("name"));
-				assertEquals("name", metaClass.getField("name").getName());
-				assertEquals("java.lang.String", metaClass.getField("name").getType().getName());
+				assertNotNull(metaClass.getDeclaredField("name"));
+				assertEquals("name", metaClass.getDeclaredField("name").getName());
+				assertEquals("java.lang.String", metaClass.getDeclaredField("name").getType().getName());
 			}
 		}
 
 	}
+
+	@Test
+	public void testDeclaredClassIsSelfLoader() {
+		ClassFactory factory = new JavassistClassFactory();
+		Class<?> clazz = factory.getRealClass(Person.class);
+		assertTrue(SelfLoader.class.isAssignableFrom(clazz));
+	}
+
 }

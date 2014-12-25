@@ -1,4 +1,10 @@
-package org.objectquery.persistence.engine;
+package org.objectquery.persistence.engine.impl;
+
+import org.objectquery.persistence.engine.ClassFactory;
+import org.objectquery.persistence.engine.InstanceKeeper;
+import org.objectquery.persistence.engine.PersistenceEngine;
+import org.objectquery.persistence.engine.PersistenceException;
+import org.objectquery.persistence.engine.PersistenceKeeper;
 
 public abstract class PersistenceEngineAbstract implements PersistenceEngine {
 
@@ -22,22 +28,27 @@ public abstract class PersistenceEngineAbstract implements PersistenceEngine {
 	}
 
 	public <T> T newInstance(Class<T> class1, Object id) {
-		T instance;
-		Class<?> clazz = classFactory.getRealClass(class1);
-		try {
-			instance = (T) clazz.getConstructor(PersistenceKeeper.class).newInstance(newRecord(id));
-		} catch (Exception e) {
-			throw new PersistenceException(e);
-		}
+		T instance = createInstance(class1, newRecord(id));
 		if (id != null)
 			instance = (T) keeper.addInstanceIfNeeded(class1, id, instance);
 		return instance;
 	}
 
+	private <T> T createInstance(Class<T> class1, PersistenceKeeper keeper) {
+		Class<?> clazz = classFactory.getRealClass(class1);
+		try {
+			T instance = (T) clazz.getConstructor(PersistenceKeeper.class).newInstance(keeper);
+			keeper.setInstance(instance);
+			return instance;
+		} catch (Exception e) {
+			throw new PersistenceException(e);
+		}
+	}
+
 	public <T> T get(Class<T> class1, Object id) {
 		Object instance = keeper.getInstanceById(class1, id);
 		if (instance == null)
-			instance = keeper.addInstanceIfNeeded(class1, id, loadRecord(id));
+			instance = keeper.addInstanceIfNeeded(class1, id, createInstance(class1, loadRecord(id)));
 		return (T) instance;
 	}
 

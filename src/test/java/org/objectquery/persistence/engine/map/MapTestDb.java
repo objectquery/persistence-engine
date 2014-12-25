@@ -1,4 +1,4 @@
-package org.objectquery.persistence.engine;
+package org.objectquery.persistence.engine.map;
 
 import java.util.HashMap;
 import java.util.Map;

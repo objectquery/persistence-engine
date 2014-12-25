@@ -3,6 +3,7 @@ package org.objectquery.persistence.engine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 import org.objectquery.persistence.engine.domain.Employee;
@@ -83,6 +84,14 @@ public class PersistenceEngineTest {
 		assertEquals("id", instance.getPassId());
 	}
 
-	
-	
+	@Test
+	public void checkSelfLoaderInstance() {
+		PersistenceEngineFactory factory = new PersistenceEngineFactory();
+		PersistenceEngine engine = factory.createEngine();
+		Employee instance = engine.newInstance(Employee.class);
+		assertTrue(instance instanceof SelfLoader);
+
+		((SelfLoader) instance).load();
+	}
+
 }

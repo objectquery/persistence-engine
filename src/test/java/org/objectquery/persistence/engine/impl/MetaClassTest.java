@@ -1,4 +1,4 @@
-package org.objectquery.persistence.engine;
+package org.objectquery.persistence.engine.impl;
 
 import static org.junit.Assert.assertEquals;
 
@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.junit.Test;
+import org.objectquery.persistence.engine.impl.MetaClass;
+import org.objectquery.persistence.engine.impl.MetaField;
 
 public class MetaClassTest {
 
@@ -16,11 +18,12 @@ public class MetaClassTest {
 		MetaClass superClass = new MetaClass("test");
 		superClass.addField("test", new MetaClass("java.lang.Long"));
 		meta.addSuper(superClass);
+		meta.initStructures();
 
-		Collection<MetaField> fields = meta.getFieldHierarchy();
+		Collection<MetaField> fields = meta.getFields();
 		assertEquals(1, fields.size());
-		assertEquals("test", fields.iterator().next().getName());
-		assertEquals("java.lang.String", fields.iterator().next().getType().getName());
+		assertEquals("test", fields.iterator().next().getDeclaration().getName());
+		assertEquals("java.lang.String", fields.iterator().next().getDeclaration().getType().getName());
 
 	}
 
@@ -31,16 +34,17 @@ public class MetaClassTest {
 		MetaClass superClass = new MetaClass("test");
 		superClass.addField("test", new MetaClass("java.lang.Long"));
 		meta.addSuper(superClass);
+		meta.initStructures();
 
-		Collection<MetaField> fields = meta.getFieldHierarchy();
+		Collection<MetaField> fields = meta.getFields();
 		assertEquals(2, fields.size());
 		Iterator<MetaField> it = fields.iterator();
 		MetaField field = it.next();
-		assertEquals("testb", field.getName());
-		assertEquals("java.lang.String", field.getType().getName());
+		assertEquals("testb", field.getDeclaration().getName());
+		assertEquals("java.lang.String", field.getDeclaration().getType().getName());
 		field = it.next();
-		assertEquals("test", field.getName());
-		assertEquals("java.lang.Long", field.getType().getName());
+		assertEquals("test", field.getDeclaration().getName());
+		assertEquals("java.lang.Long", field.getDeclaration().getType().getName());
 
 	}
 }
