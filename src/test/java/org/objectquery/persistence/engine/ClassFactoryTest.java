@@ -100,17 +100,19 @@ public class ClassFactoryTest {
 		assertEquals(clazz, meta.getRealClass());
 		Set<MetaClass> supers = meta.getSupers();
 		assertEquals(2, supers.size());
-		Iterator<MetaClass> iterator = supers.iterator();
-		MetaClass superMata = iterator.next();
-		assertEquals(factory.getRealClass(Company.class), superMata.getRealClass());
-		assertNotNull(superMata.getField("legalName"));
-		assertEquals("legalName", superMata.getField("legalName").getName());
-		assertEquals("java.lang.String", superMata.getField("legalName").getType().getName());
-		superMata = iterator.next();
-		assertEquals(factory.getRealClass(Person.class), superMata.getRealClass());
-		assertNotNull(superMata.getField("name"));
-		assertEquals("name", superMata.getField("name").getName());
-		assertEquals("java.lang.String", superMata.getField("name").getType().getName());
-	}
+		for (MetaClass metaClass : supers) {
+			if (metaClass.getName().equals(Company.class.getName())) {
+				assertEquals(factory.getRealClass(Company.class), metaClass.getRealClass());
+				assertNotNull(metaClass.getField("legalName"));
+				assertEquals("legalName", metaClass.getField("legalName").getName());
+				assertEquals("java.lang.String", metaClass.getField("legalName").getType().getName());
+			} else {
+				assertEquals(factory.getRealClass(Person.class), metaClass.getRealClass());
+				assertNotNull(metaClass.getField("name"));
+				assertEquals("name", metaClass.getField("name").getName());
+				assertEquals("java.lang.String", metaClass.getField("name").getType().getName());
+			}
+		}
 
+	}
 }
