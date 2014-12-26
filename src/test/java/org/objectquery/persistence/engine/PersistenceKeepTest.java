@@ -1,11 +1,20 @@
 package org.objectquery.persistence.engine;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.objectquery.persistence.engine.domain.Book;
+import org.objectquery.persistence.engine.domain.Employee;
 import org.objectquery.persistence.engine.domain.Person;
+import org.objectquery.persistence.engine.map.MapPersistenceEngine;
+import org.objectquery.persistence.engine.map.MapTestDb;
 
 public class PersistenceKeepTest {
 
@@ -22,6 +31,30 @@ public class PersistenceKeepTest {
 		engine.close();
 	}
 
+	public MapTestDb getDb() {
+		return ((MapPersistenceEngine) engine).getDb();
+	}
+
+	@Test
+	public void createSetGetValue() {
+		PersistenceEngineFactory factory = new PersistenceEngineFactory();
+		PersistenceEngine engine = factory.createEngine();
+		Person instance = engine.newInstance(Person.class);
+		assertNotNull(instance);
+		instance.setName("name");
+		assertEquals("name", instance.getName());
+	}
+
+	@Test
+	public void createSetGetValueHierarchy() {
+		Employee instance = engine.newInstance(Employee.class);
+		assertNotNull(instance);
+		instance.setName("name");
+		assertEquals("name", instance.getName());
+		instance.setPassId("id");
+		assertEquals("id", instance.getPassId());
+	}
+
 	@Test
 	public void testKeepPresistence() {
 		Person p = engine.newInstance(Person.class, "10");
@@ -32,4 +65,34 @@ public class PersistenceKeepTest {
 		p = engine.get(Person.class, "10");
 		assertEquals("should save it", p.getName());
 	}
+
+	@Test
+	public void tesObjectRef() {
+		Person person = engine.newInstance(Person.class, "10");
+		person.setName("should save it");
+		Book book = engine.newInstance(Book.class, "12");
+		book.setTitle("life is life");
+		book.setOwner(person);
+		int phash = System.identityHashCode(person);
+		int bhash = System.identityHashCode(book);
+		person = null;
+		book = null;
+		System.gc();
+
+		MapTestDb db = getDb();
+		Map<String, Object> values = db.getById("12");
+
+		assertEquals("life is life", values.get("title"));
+		assertEquals("10", values.get("owner"));
+
+		book = engine.get(Book.class, "12");
+		assertEquals("life is life", book.getTitle());
+		assertEquals("should save it", book.getOwner().getName());
+
+		assertNotEquals(bhash, System.identityHashCode(book));
+		assertNotEquals(phash, System.identityHashCode(book.getOwner()));
+		assertSame(book.getOwner(), engine.get(Person.class, "10"));
+
+	}
+
 }

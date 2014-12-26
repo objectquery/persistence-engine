@@ -10,5 +10,7 @@ public interface PersistenceKeeper {
 
 	Object loadField(String fieldName, int filedId);
 
+	Object getId();
+
 	void checkLoad();
 }

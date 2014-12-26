@@ -43,4 +43,8 @@ public class MetaFieldDec {
 		return setter;
 	}
 
+	public boolean isPrimitive() {
+		return type.isPrimitive();
+	}
+
 }

@@ -7,20 +7,18 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Set;
 
 import org.junit.Test;
 import org.objectquery.persistence.engine.ClassFactory;
-import org.objectquery.persistence.engine.SelfLoader;
+import org.objectquery.persistence.engine.PersistentObject;
 import org.objectquery.persistence.engine.domain.Company;
 import org.objectquery.persistence.engine.domain.Employee;
 import org.objectquery.persistence.engine.domain.EmployeeMetadata;
 import org.objectquery.persistence.engine.domain.Organization;
 import org.objectquery.persistence.engine.domain.Person;
 import org.objectquery.persistence.engine.domain.SelfEmployed;
-import org.objectquery.persistence.engine.impl.JavassistClassFactory;
-import org.objectquery.persistence.engine.impl.MetaClass;
-import org.objectquery.persistence.engine.impl.MetaFieldDec;
 
 public class ClassFactoryTest {
 
@@ -124,7 +122,31 @@ public class ClassFactoryTest {
 	public void testDeclaredClassIsSelfLoader() {
 		ClassFactory factory = new JavassistClassFactory();
 		Class<?> clazz = factory.getRealClass(Person.class);
-		assertTrue(SelfLoader.class.isAssignableFrom(clazz));
+		assertTrue(PersistentObject.class.isAssignableFrom(clazz));
+	}
+
+	@Test
+	public void testPrimitiveTypes() {
+		ClassFactory factory = new JavassistClassFactory();
+
+		assertTrue(factory.getClassMetadata(Byte.class).isPrimitive());
+		assertTrue(factory.getClassMetadata(Character.class).isPrimitive());
+		assertTrue(factory.getClassMetadata(Boolean.class).isPrimitive());
+		assertTrue(factory.getClassMetadata(Short.class).isPrimitive());
+		assertTrue(factory.getClassMetadata(Integer.class).isPrimitive());
+		assertTrue(factory.getClassMetadata(Long.class).isPrimitive());
+		assertTrue(factory.getClassMetadata(Float.class).isPrimitive());
+		assertTrue(factory.getClassMetadata(Double.class).isPrimitive());
+		assertTrue(factory.getClassMetadata(Date.class).isPrimitive());
+		assertTrue(factory.getClassMetadata(String.class).isPrimitive());
+		assertTrue(factory.getClassMetadata(Byte.TYPE).isPrimitive());
+		assertTrue(factory.getClassMetadata(Character.TYPE).isPrimitive());
+		assertTrue(factory.getClassMetadata(Boolean.TYPE).isPrimitive());
+		assertTrue(factory.getClassMetadata(Short.TYPE).isPrimitive());
+		assertTrue(factory.getClassMetadata(Integer.TYPE).isPrimitive());
+		assertTrue(factory.getClassMetadata(Float.TYPE).isPrimitive());
+		assertTrue(factory.getClassMetadata(Double.TYPE).isPrimitive());
+
 	}
 
 }

@@ -2,6 +2,7 @@ package org.objectquery.persistence.engine.map;
 
 import org.objectquery.persistence.engine.ClassFactory;
 import org.objectquery.persistence.engine.PersistenceKeeper;
+import org.objectquery.persistence.engine.impl.MetaClass;
 import org.objectquery.persistence.engine.impl.PersistenceEngineAbstract;
 
 public class MapPersistenceEngine extends PersistenceEngineAbstract {
@@ -13,12 +14,20 @@ public class MapPersistenceEngine extends PersistenceEngineAbstract {
 	}
 
 	@Override
-	protected PersistenceKeeper loadRecord(Object id) {
-		return new MapPersistenceKeeper(id, db);
+	protected PersistenceKeeper loadRecord(MetaClass metaClass, Object id) {
+		return new MapPersistenceKeeper(this, metaClass, id, db);
 	}
 
 	@Override
-	protected PersistenceKeeper newRecord(Object id) {
-		return new MapPersistenceKeeper(id, db);
+	protected PersistenceKeeper newRecord(MetaClass metaClass, Object id) {
+		return new MapPersistenceKeeper(this, metaClass, id, db);
+	}
+
+	public MapTestDb getDb() {
+		return db;
+	}
+
+	@Override
+	public void close() {
 	}
 }

@@ -15,27 +15,24 @@ public abstract class PersistenceEngineAbstract implements PersistenceEngine {
 		this.classFactory = classFactory;
 	}
 
-	public void close() {
+	protected abstract PersistenceKeeper newRecord(MetaClass metaClass, Object id);
 
-	}
-
-	protected abstract PersistenceKeeper newRecord(Object id);
-
-	protected abstract PersistenceKeeper loadRecord(Object id);
+	protected abstract PersistenceKeeper loadRecord(MetaClass metaClass, Object id);
 
 	public <T> T newInstance(Class<T> class1) {
 		return newInstance(class1, null);
 	}
 
-	public <T> T newInstance(Class<T> class1, Object id) {
-		T instance = createInstance(class1, newRecord(id));
+	@SuppressWarnings("unchecked")
+	public <T> T newInstance(Class<T> classInter, Object id) {
+		Class<? extends T> realClass = (Class<? extends T>) classFactory.getRealClass(classInter);
+		T instance = createInstance(realClass, newRecord(getMetaClass(classInter), id));
 		if (id != null)
-			instance = (T) keeper.addInstanceIfNeeded(class1, id, instance);
+			instance = (T) keeper.addInstanceIfNeeded(classInter, id, instance);
 		return instance;
 	}
 
-	private <T> T createInstance(Class<T> class1, PersistenceKeeper keeper) {
-		Class<?> clazz = classFactory.getRealClass(class1);
+	private <T> T createInstance(Class<T> clazz, PersistenceKeeper keeper) {
 		try {
 			T instance = (T) clazz.getConstructor(PersistenceKeeper.class).newInstance(keeper);
 			keeper.setInstance(instance);
@@ -45,11 +42,17 @@ public abstract class PersistenceEngineAbstract implements PersistenceEngine {
 		}
 	}
 
-	public <T> T get(Class<T> class1, Object id) {
-		Object instance = keeper.getInstanceById(class1, id);
+	@SuppressWarnings("unchecked")
+	public <T> T get(Class<T> classInter, Object id) {
+		Class<? extends T> realClass = (Class<? extends T>) classFactory.getRealClass(classInter);
+		Object instance = keeper.getInstanceById(classInter, id);
 		if (instance == null)
-			instance = keeper.addInstanceIfNeeded(class1, id, createInstance(class1, loadRecord(id)));
+			instance = keeper.addInstanceIfNeeded(classInter, id, createInstance(realClass, loadRecord(getMetaClass(classInter), id)));
 		return (T) instance;
+	}
+
+	protected MetaClass getMetaClass(Class<?> type) {
+		return classFactory.getClassMetadata(type);
 	}
 
 }

@@ -22,4 +22,8 @@ public class MetaField {
 		return id;
 	}
 
+	public boolean isPrimitive() {
+		return getDeclaration().isPrimitive();
+	}
+
 }

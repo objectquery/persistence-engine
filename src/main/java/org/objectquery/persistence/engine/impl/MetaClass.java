@@ -10,14 +10,21 @@ import java.util.Set;
 public class MetaClass {
 
 	private String name;
+	private boolean primitive = false;
 	private Map<String, MetaFieldDec> declaredFields = new HashMap<String, MetaFieldDec>();
 	private Map<String, MetaField> realFields = new HashMap<String, MetaField>();
 	private MetaField[] fieldIndex;
 	private Set<MetaClass> supers = new HashSet<MetaClass>();
 	private Class<?> realClass;
+	private Class<?> type;
 
 	public MetaClass(String name) {
 		this.name = name;
+	}
+
+	public MetaClass(String name, boolean primitive) {
+		this.name = name;
+		this.primitive = primitive;
 	}
 
 	public String getName() {
@@ -66,11 +73,19 @@ public class MetaClass {
 		return realFields.get(name);
 	}
 
+	public MetaField getFieldById(int id) {
+		return fieldIndex[id];
+	}
+
 	private void getPlainHierarchy(Set<MetaClass> supers, Set<MetaClass> classes) {
 		for (MetaClass metaClass : supers) {
 			getPlainHierarchy(metaClass.supers, classes);
 		}
 		classes.addAll(supers);
+	}
+
+	public boolean isPrimitive() {
+		return primitive;
 	}
 
 	public void initStructures() {
@@ -95,5 +110,13 @@ public class MetaClass {
 			fieldIndex[field.getId()] = field;
 		}
 
+	}
+
+	public void setType(Class<?> type) {
+		this.type = type;
+	}
+
+	public Class<?> getType() {
+		return type;
 	}
 }

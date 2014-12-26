@@ -3,11 +3,6 @@ package org.objectquery.persistence.engine.impl;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.objectquery.persistence.engine.ClassFactory;
-import org.objectquery.persistence.engine.PersistenceException;
-import org.objectquery.persistence.engine.PersistenceKeeper;
-import org.objectquery.persistence.engine.SelfLoader;
-
 import javassist.CannotCompileException;
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -16,16 +11,50 @@ import javassist.CtField;
 import javassist.CtMethod;
 import javassist.CtNewConstructor;
 import javassist.CtNewMethod;
+import javassist.LoaderClassPath;
 import javassist.NotFoundException;
+
+import org.objectquery.persistence.engine.ClassFactory;
+import org.objectquery.persistence.engine.PersistenceException;
+import org.objectquery.persistence.engine.PersistenceKeeper;
+import org.objectquery.persistence.engine.PersistentObject;
 
 public class JavassistClassFactory implements ClassFactory {
 
 	private static final String IMPL_CLASS_SUFFIX = "$Impl";
 	private ClassPool classPoll;
+	private ClassLoader classLoader;
 	private Map<String, MetaClass> metadata = new HashMap<String, MetaClass>();
 
 	public JavassistClassFactory() {
-		classPoll = ClassPool.getDefault();
+		this(null);
+	}
+
+	public JavassistClassFactory(ClassLoader classLoader) {
+		if (classLoader == null) {
+			classLoader = Thread.currentThread().getContextClassLoader();
+		}
+		this.classLoader = classLoader;
+		classPoll = new ClassPool();
+		classPoll.appendClassPath(new LoaderClassPath(classLoader));
+		addMetadata(new MetaClass("java.lang.Byte", true));
+		addMetadata(new MetaClass("java.lang.Character", true));
+		addMetadata(new MetaClass("java.lang.Boolean", true));
+		addMetadata(new MetaClass("java.lang.Short", true));
+		addMetadata(new MetaClass("java.lang.Integer", true));
+		addMetadata(new MetaClass("java.lang.Long", true));
+		addMetadata(new MetaClass("java.lang.Float", true));
+		addMetadata(new MetaClass("java.lang.Double", true));
+		addMetadata(new MetaClass("java.util.Date", true));
+		addMetadata(new MetaClass("java.lang.String", true));
+		addMetadata(new MetaClass(Byte.TYPE.getName(), true));
+		addMetadata(new MetaClass(Character.TYPE.getName(), true));
+		addMetadata(new MetaClass(Boolean.TYPE.getName(), true));
+		addMetadata(new MetaClass(Short.TYPE.getName(), true));
+		addMetadata(new MetaClass(Integer.TYPE.getName(), true));
+		addMetadata(new MetaClass(Long.TYPE.getName(), true));
+		addMetadata(new MetaClass(Float.TYPE.getName(), true));
+		addMetadata(new MetaClass(Double.TYPE.getName(), true));
 	}
 
 	public Class<?> getRealClass(Class<?> interfa) {
@@ -34,24 +63,34 @@ public class JavassistClassFactory implements ClassFactory {
 		return getRealClass(interfa.getName());
 	}
 
+	private Class<?> getClassOrNull(String name) {
+		try {
+			return classLoader.loadClass(name);
+		} catch (ClassNotFoundException e) {
+			return null;
+		}
+	}
+
 	private Class<?> getRealClass(String interName) {
 		try {
-			Class<?> realClass;
-			CtClass newClass = classPoll.getOrNull(interName + IMPL_CLASS_SUFFIX);
-			if (newClass == null) {
+			Class<?> realClass = getClassOrNull(interName + IMPL_CLASS_SUFFIX);
+
+			if (realClass == null) {
+				CtClass newClass = classPoll.getOrNull(interName + IMPL_CLASS_SUFFIX);
 				CtClass inter = classPoll.get(interName);
 				MetaClass newMetaClass = getOrCreateMetaClass(interName);
 				implementInterfaceMetadata(inter, newMetaClass);
 				newClass = classPoll.makeClass(interName + IMPL_CLASS_SUFFIX);
 				makeRealClass(inter, newMetaClass, newClass);
-				realClass = newClass.toClass();
+				realClass = newClass.toClass(classLoader, null);
 				newMetaClass.setRealClass(realClass);
+				newMetaClass.setType(classLoader.loadClass(interName));
 			} else {
-				realClass = classPoll.getClassLoader().loadClass(interName + IMPL_CLASS_SUFFIX);
 				MetaClass metaClass = getOrCreateMetaClass(interName);
 				if (metaClass.getRealClass() == null) {
 					implementInterfaceMetadata(classPoll.get(interName), metaClass);
 					metaClass.setRealClass(realClass);
+					metaClass.setType(classLoader.loadClass(interName));
 				}
 			}
 			return realClass;
@@ -105,9 +144,9 @@ public class JavassistClassFactory implements ClassFactory {
 		}
 
 		// Add self loader and relative load method;
-		CtClass loader = classPoll.get(SelfLoader.class.getName());
-		newClass.addInterface(loader);
-		CtMethod loadMethod = loader.getDeclaredMethod("load");
+		CtClass pers = classPoll.get(PersistentObject.class.getName());
+		newClass.addInterface(pers);
+		CtMethod loadMethod = pers.getDeclaredMethod("load");
 		StringBuilder body = new StringBuilder("{");
 		for (MetaField metaField : metaClass.getFields()) {
 			MetaFieldDec dec = metaField.getDeclaration();
@@ -118,6 +157,11 @@ public class JavassistClassFactory implements ClassFactory {
 		CtMethod loadMethodImpl = CtNewMethod.make(loadMethod.getReturnType(), loadMethod.getName(), loadMethod.getParameterTypes(),
 				loadMethod.getExceptionTypes(), body.toString(), newClass);
 		newClass.addMethod(loadMethodImpl);
+		CtMethod getKeeperMethod = pers.getDeclaredMethod("getKeeper");
+		// add getKeeper method.
+		CtMethod getKeeperMethodImpl = CtNewMethod.make(getKeeperMethod.getReturnType(), getKeeperMethod.getName(), getKeeperMethod.getParameterTypes(),
+				getKeeperMethod.getExceptionTypes(), "return __$persistence;", newClass);
+		newClass.addMethod(getKeeperMethodImpl);
 
 	}
 
@@ -152,6 +196,10 @@ public class JavassistClassFactory implements ClassFactory {
 
 	public MetaClass getClassMetadata(Class<?> clazz) {
 		return metadata.get(clazz.getName());
+	}
+
+	public void addMetadata(MetaClass meta) {
+		metadata.put(meta.getName(), meta);
 	}
 
 	private MetaClass getOrCreateMetaClass(String name) {
