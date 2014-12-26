@@ -16,17 +16,12 @@ Define entities
 public interface Library {
 
   void setAddress(String address);
-
   String getAddress();
 
   Iterable<Book> getBooks();
-  
   void addToBooks(Book book);
-  
   boolean removeFromBooks(Book book);
-  
   int countBooks();
-  
   boolean hasInBooks(Book book);
   
   default Iterable<Book> getBooksByAuthor(String author) {
@@ -39,11 +34,9 @@ public interface Library {
 public interface Book {
 
   void setTitle(String title);
-
   String getTitle();
 
   void setAuthor(String author);
-  
   String getAuthor();
 
 }
