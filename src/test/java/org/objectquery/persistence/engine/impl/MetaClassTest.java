@@ -45,6 +45,6 @@ public class MetaClassTest {
 		field = it.next();
 		assertEquals("test", field.getDeclaration().getName());
 		assertEquals("java.lang.Long", field.getDeclaration().getType().getName());
-
 	}
+
 }

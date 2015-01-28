@@ -3,6 +3,7 @@ package org.objectquery.persistence.engine.impl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Modifier;
@@ -13,6 +14,7 @@ import java.util.Set;
 import org.junit.Test;
 import org.objectquery.persistence.engine.ClassFactory;
 import org.objectquery.persistence.engine.PersistentObject;
+import org.objectquery.persistence.engine.domain.Book;
 import org.objectquery.persistence.engine.domain.Company;
 import org.objectquery.persistence.engine.domain.Employee;
 import org.objectquery.persistence.engine.domain.EmployeeMetadata;
@@ -149,4 +151,20 @@ public class ClassFactoryTest {
 
 	}
 
+	@Test
+	public void testCollectionField() {
+		ClassFactory factory = new JavassistClassFactory();
+		factory.getRealClass(Book.class);
+		MetaClass meta = factory.getClassMetadata(Book.class);
+
+		MetaField books = meta.getField("books");
+		assertNotNull(books);
+		MetaFieldDec declaration = books.getDeclaration();
+		assertTrue(declaration.isCollection());
+		assertNull(declaration.getSetter());
+		assertNotNull(declaration.getAddTo());
+		assertNotNull(declaration.getCount());
+		assertNotNull(declaration.getRemoveFrom());
+		assertNotNull(declaration.getHasIn());
+	}
 }

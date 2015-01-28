@@ -68,14 +68,14 @@ public class PersistenceKeepTest {
 
 	@Test
 	public void tesObjectRef() {
-		Person person = engine.newInstance(Person.class, "10");
-		person.setName("should save it");
+		Person p = engine.newInstance(Person.class, "10");
+		p.setName("should save it");
 		Book book = engine.newInstance(Book.class, "12");
 		book.setTitle("life is life");
-		book.setOwner(person);
-		int phash = System.identityHashCode(person);
+		book.setOwner(p);
+		int phash = System.identityHashCode(p);
 		int bhash = System.identityHashCode(book);
-		person = null;
+		p = null;
 		book = null;
 		System.gc();
 

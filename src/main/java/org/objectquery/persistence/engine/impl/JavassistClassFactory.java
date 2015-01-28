@@ -120,11 +120,29 @@ public class JavassistClassFactory implements ClassFactory {
 				}
 				MetaFieldDec field = metaClass.addField(fieldName, getOrCreateMetaClass(method.getReturnType().getName()));
 				field.setGetter(method);
-				CtMethod setter = inter.getDeclaredMethod("set" + caseName);
+				CtMethod setter;
+				setter = getMethodOrNull(inter, "set" + caseName);
 				field.setSetter(setter);
+
+				CtClass iterab = classPoll.get(Iterable.class.getName());
+				if (method.getReturnType().subclassOf(iterab)) {
+					field.setCollection(true);
+					field.setAddTo(getMethodOrNull(inter, "addTo" + caseName));
+					field.setRemoveFrom(getMethodOrNull(inter, "removeFrom" + caseName));
+					field.setCount(getMethodOrNull(inter, "count" + caseName));
+					field.setHasIn(getMethodOrNull(inter, "hasIn" + caseName));
+				}
 			}
 		}
 		metaClass.initStructures();
+	}
+
+	private CtMethod getMethodOrNull(CtClass inter, String methodName) {
+		try {
+			return inter.getDeclaredMethod(methodName);
+		} catch (NotFoundException e) {
+			return null;
+		}
 	}
 
 	private void makeRealClass(CtClass inter, MetaClass metaClass, CtClass newClass) throws CannotCompileException, NotFoundException {
@@ -140,7 +158,8 @@ public class JavassistClassFactory implements ClassFactory {
 		for (MetaField metaField : metaClass.getFields()) {
 			CtField field = getOrCreate(classPoll.get(metaField.getDeclaration().getType().getName()), metaField.getDeclaration().getName(), newClass);
 			newClass.addMethod(createGetter(field, metaField));
-			newClass.addMethod(createSetter(field, metaField));
+			if (metaField.getDeclaration().getSetter() != null)
+				newClass.addMethod(createSetter(field, metaField));
 		}
 
 		// Add self loader and relative load method;
