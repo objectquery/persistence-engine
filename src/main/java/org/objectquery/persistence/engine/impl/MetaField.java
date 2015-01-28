@@ -22,6 +22,10 @@ public class MetaField {
 		return id;
 	}
 
+	public boolean isCollection() {
+		return getDeclaration().isCollection();
+	}
+
 	public boolean isPrimitive() {
 		return getDeclaration().isPrimitive();
 	}

@@ -157,7 +157,7 @@ public class ClassFactoryTest {
 		factory.getRealClass(Book.class);
 		MetaClass meta = factory.getClassMetadata(Book.class);
 
-		MetaField books = meta.getField("books");
+		MetaField books = meta.getField("refs");
 		assertNotNull(books);
 		MetaFieldDec declaration = books.getDeclaration();
 		assertTrue(declaration.isCollection());

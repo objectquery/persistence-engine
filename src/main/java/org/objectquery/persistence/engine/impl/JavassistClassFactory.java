@@ -1,5 +1,6 @@
 package org.objectquery.persistence.engine.impl;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -156,10 +157,27 @@ public class JavassistClassFactory implements ClassFactory {
 		// Add user defined interface and relative fields.
 		newClass.addInterface(inter);
 		for (MetaField metaField : metaClass.getFields()) {
-			CtField field = getOrCreate(classPoll.get(metaField.getDeclaration().getType().getName()), metaField.getDeclaration().getName(), newClass);
+
+			CtClass filedType;
+			MetaFieldDec declaration = metaField.getDeclaration();
+			if (metaField.isCollection())
+				filedType = classPoll.get(Collection.class.getName());
+			else
+				filedType = classPoll.get(declaration.getType().getName());
+			CtField field = getOrCreate(filedType, declaration.getName(), newClass);
 			newClass.addMethod(createGetter(field, metaField));
-			if (metaField.getDeclaration().getSetter() != null)
+			if (declaration.getSetter() != null)
 				newClass.addMethod(createSetter(field, metaField));
+			if (metaField.isCollection()) {
+				if (declaration.getAddTo() != null)
+					newClass.addMethod(createAddTo(field, metaField));
+				if (declaration.getRemoveFrom() != null)
+					newClass.addMethod(createRemoveFrom(field, metaField));
+				if (declaration.getHasIn() != null)
+					newClass.addMethod(createHasIn(field, metaField));
+				if (declaration.getCount() != null)
+					newClass.addMethod(createCount(field, metaField));
+			}
 		}
 
 		// Add self loader and relative load method;
@@ -209,6 +227,38 @@ public class JavassistClassFactory implements ClassFactory {
 		String body = "{__$persistence.checkLoad(); " + field.getName() + "= (" + field.getType().getName() + ")__$persistence.onFieldWrite(\""
 				+ field.getName() + "\"," + metaField.getId() + "," + field.getName() + ",$1);}";
 		CtMethod method = metaField.getDeclaration().getSetter();
+		return CtNewMethod.make(method.getReturnType(), method.getName(), method.getParameterTypes(), method.getExceptionTypes(), body,
+				field.getDeclaringClass());
+	}
+
+	private CtMethod createAddTo(CtField field, MetaField metaField) throws CannotCompileException, NotFoundException {
+		String body = "{__$persistence.checkLoad();return __$persistence.onAddTo(\"" + field.getName() + "\"," + metaField.getId() + "," + field.getName()
+				+ ",$1);}";
+		CtMethod method = metaField.getDeclaration().getAddTo();
+		return CtNewMethod.make(method.getReturnType(), method.getName(), method.getParameterTypes(), method.getExceptionTypes(), body,
+				field.getDeclaringClass());
+	}
+
+	private CtMethod createRemoveFrom(CtField field, MetaField metaField) throws CannotCompileException, NotFoundException {
+		String body = "{__$persistence.checkLoad(); return __$persistence.onRemoveFrom(\"" + field.getName() + "\"," + metaField.getId() + ","
+				+ field.getName() + ",$1);}";
+		CtMethod method = metaField.getDeclaration().getRemoveFrom();
+		return CtNewMethod.make(method.getReturnType(), method.getName(), method.getParameterTypes(), method.getExceptionTypes(), body,
+				field.getDeclaringClass());
+	}
+
+	private CtMethod createHasIn(CtField field, MetaField metaField) throws CannotCompileException, NotFoundException {
+		String body = "{__$persistence.checkLoad(); return __$persistence.onHasIn(\"" + field.getName() + "\"," + metaField.getId() + "," + field.getName()
+				+ ",$1);}";
+		CtMethod method = metaField.getDeclaration().getHasIn();
+		return CtNewMethod.make(method.getReturnType(), method.getName(), method.getParameterTypes(), method.getExceptionTypes(), body,
+				field.getDeclaringClass());
+	}
+
+	private CtMethod createCount(CtField field, MetaField metaField) throws CannotCompileException, NotFoundException {
+		String body = "{__$persistence.checkLoad(); return __$persistence.onCount(\"" + field.getName() + "\"," + metaField.getId() + "," + field.getName()
+				+ ");}";
+		CtMethod method = metaField.getDeclaration().getCount();
 		return CtNewMethod.make(method.getReturnType(), method.getName(), method.getParameterTypes(), method.getExceptionTypes(), body,
 				field.getDeclaringClass());
 	}

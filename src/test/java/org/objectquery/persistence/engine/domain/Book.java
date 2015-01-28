@@ -10,14 +10,14 @@ public interface Book {
 
 	void setOwner(Person owner);
 
-	Iterable<Book> getBooks();
+	Iterable<Book> getRefs();
 
-	void addToBooks(Book book);
+	void addToRefs(Book book);
 
-	boolean removeFromBooks(Book book);
+	boolean removeFromRefs(Book book);
 
-	boolean hasInBooks(Book book);
+	boolean hasInRefs(Book book);
 
-	int countBooks();
+	int countRefs();
 
 }
