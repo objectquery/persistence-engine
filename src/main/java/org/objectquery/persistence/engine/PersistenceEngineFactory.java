@@ -1,15 +1,15 @@
 package org.objectquery.persistence.engine;
 
 import java.util.Iterator;
-
-import javax.imageio.spi.ServiceRegistry;
+import java.util.ServiceLoader;
 
 import org.objectquery.persistence.engine.impl.JavassistClassFactory;
 
 public class PersistenceEngineFactory {
 
 	public PersistenceEngine createEngine() {
-		Iterator<PersistenceEngineFactory> factories = ServiceRegistry.lookupProviders(PersistenceEngineFactory.class);
+		ServiceLoader<PersistenceEngineFactory> loader = ServiceLoader.load(PersistenceEngineFactory.class);
+		Iterator<PersistenceEngineFactory> factories = loader.iterator();
 		if (factories == null) {
 			throw new PersistenceException("Inpossible to find any persistence engine implementation in the classpath");
 		}
