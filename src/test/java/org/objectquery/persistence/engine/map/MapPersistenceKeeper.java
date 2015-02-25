@@ -3,7 +3,6 @@ package org.objectquery.persistence.engine.map;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.objectquery.persistence.engine.PersistenceEngine;
 import org.objectquery.persistence.engine.impl.MetaClass;
 import org.objectquery.persistence.engine.impl.PersistenceKeeperAbstract;
 
@@ -12,7 +11,7 @@ public class MapPersistenceKeeper extends PersistenceKeeperAbstract {
 	private MapTestDb db;
 	private Map<String, Object> values;
 
-	public MapPersistenceKeeper(PersistenceEngine engine, MetaClass metaClass, Object id2, MapTestDb db) {
+	public MapPersistenceKeeper(MapPersistenceEngine engine, MetaClass metaClass, Object id2, MapTestDb db) {
 		super(engine, metaClass, id2);
 		this.db = db;
 		values = db.getById(id2);

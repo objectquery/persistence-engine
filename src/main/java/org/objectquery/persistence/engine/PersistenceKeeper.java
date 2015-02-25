@@ -2,6 +2,8 @@ package org.objectquery.persistence.engine;
 
 import java.util.Collection;
 
+import org.objectquery.persistence.engine.impl.MetaField;
+
 public interface PersistenceKeeper {
 
 	void setInstance(Object instance);
@@ -22,5 +24,9 @@ public interface PersistenceKeeper {
 
 	int onCount(String fieldName, int fieldId, Collection<?> values);
 
+	void storeChangedValue(MetaField field, Object oldValue, Object newValue);
+
 	void checkLoad();
+	
+	void forceLoad();
 }

@@ -3,7 +3,6 @@ package org.objectquery.persistence.engine.impl;
 import java.util.Collection;
 import java.util.HashSet;
 
-import org.objectquery.persistence.engine.PersistenceEngine;
 import org.objectquery.persistence.engine.PersistenceKeeper;
 import org.objectquery.persistence.engine.PersistentObject;
 
@@ -12,10 +11,10 @@ public abstract class PersistenceKeeperAbstract implements PersistenceKeeper {
 	private Object id;
 	private MetaClass metaClass;
 	private PersistentObject instance;
-	private PersistenceEngine engine;
+	private PersistenceEngineInternal engine;
 	private boolean initied;
 
-	public PersistenceKeeperAbstract(PersistenceEngine engine, MetaClass metaClass, Object id) {
+	public PersistenceKeeperAbstract(PersistenceEngineInternal engine, MetaClass metaClass, Object id) {
 		this.engine = engine;
 		this.metaClass = metaClass;
 		this.id = id;
@@ -38,12 +37,22 @@ public abstract class PersistenceKeeperAbstract implements PersistenceKeeper {
 		}
 	}
 
-	@Override
-	public Object onFieldRead(String fieldName, int fieldId, Object prev) {
-		return prev;
+	public void forceLoad() {
+		instance.load();
+		initied = true;
 	}
 
-	protected void load() {
+	@Override
+	public Object onFieldRead(String fieldName, int fieldId, Object prev) {
+		Transaction transaction = engine.current();
+		if (transaction != null) {
+			MetaField field = metaClass.getFieldById(fieldId);
+			Object value = transaction.getChangeValue(this, field);
+			if (value != null)
+				return value;
+		}
+
+		return prev;
 	}
 
 	@Override
@@ -69,24 +78,25 @@ public abstract class PersistenceKeeperAbstract implements PersistenceKeeper {
 	@Override
 	public Object onFieldWrite(String fieldName, int fieldId, Object prev, Object newValue) {
 		MetaField field = metaClass.getFieldById(fieldId);
-		if (field.isPrimitive())
-			storeField(fieldName, prev, newValue);
-		else {
-			final Object prevId;
-			if (prev != null)
-				prevId = ((PersistentObject) prev).getKeeper().getId();
-			else
-				prevId = null;
-			final Object newValueId;
-			if (newValue != null)
-				newValueId = ((PersistentObject) newValue).getKeeper().getId();
-			else
-				newValueId = null;
-
-			storeField(fieldName, prevId, newValueId);
+		Transaction transaction = engine.current();
+		if (transaction != null) {
+			transaction.addChange(this, field, prev, newValue);
+			return prev;
+		} else {
+			storeChangedValue(field, prev, newValue);
+			return newValue;
 		}
+	}
 
-		return newValue;
+	@Override
+	public void storeChangedValue(MetaField field, Object oldValue, Object newValue) {
+		if (!field.isPrimitive()) {
+			if (oldValue != null)
+				oldValue = ((PersistentObject) oldValue).getKeeper().getId();
+			if (newValue != null)
+				newValue = ((PersistentObject) newValue).getKeeper().getId();
+		}
+		storeField(field.getDeclaration().getName(), oldValue, newValue);
 	}
 
 	@Override

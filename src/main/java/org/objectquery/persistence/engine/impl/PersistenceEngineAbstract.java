@@ -2,14 +2,14 @@ package org.objectquery.persistence.engine.impl;
 
 import org.objectquery.persistence.engine.ClassFactory;
 import org.objectquery.persistence.engine.InstanceKeeper;
-import org.objectquery.persistence.engine.PersistenceEngine;
 import org.objectquery.persistence.engine.PersistenceException;
 import org.objectquery.persistence.engine.PersistenceKeeper;
 
-public abstract class PersistenceEngineAbstract implements PersistenceEngine {
+public abstract class PersistenceEngineAbstract implements PersistenceEngineInternal {
 
 	private ClassFactory classFactory;
 	private InstanceKeeper keeper = new InstanceKeeper();
+	private TransactionEngine transactions = new TransactionEngine();
 
 	public PersistenceEngineAbstract(ClassFactory classFactory) {
 		this.classFactory = classFactory;
@@ -53,6 +53,41 @@ public abstract class PersistenceEngineAbstract implements PersistenceEngine {
 
 	protected MetaClass getMetaClass(Class<?> type) {
 		return classFactory.getClassMetadata(type);
+	}
+
+	@Override
+	public void begin() {
+		transactions.begin(this);
+	}
+
+	@Override
+	public void commit() {
+		transactions.commit(this);
+	}
+
+	@Override
+	public void restore() {
+		transactions.restore(this);
+	}
+
+	@Override
+	public void rollback() {
+		transactions.rollback(this);
+	}
+
+	@Override
+	public void suspend() {
+		transactions.suspend(this);
+
+	}
+
+	@Override
+	public Transaction current() {
+		return transactions.current(this);
+	}
+
+	public Transaction newTransaction() {
+		return new TransactionImpl();
 	}
 
 }
