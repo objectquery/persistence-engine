@@ -17,14 +17,16 @@ public class MetaClass {
 	private Set<MetaClass> supers = new HashSet<MetaClass>();
 	private Class<?> realClass;
 	private Class<?> type;
+	private Class<?> primitiveCastClass;
 
 	public MetaClass(String name) {
 		this.name = name;
 	}
 
-	public MetaClass(String name, boolean primitive) {
+	public MetaClass(String name, boolean primitive, Class<?> primitiveCastClass) {
 		this.name = name;
 		this.primitive = primitive;
+		this.primitiveCastClass = primitiveCastClass;
 	}
 
 	public String getName() {
@@ -118,5 +120,9 @@ public class MetaClass {
 
 	public Class<?> getType() {
 		return type;
+	}
+
+	public Class<?> getPrimitiveCastClass() {
+		return primitiveCastClass;
 	}
 }

@@ -1,6 +1,11 @@
 package org.objectquery.persistence.engine.impl;
 
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.Collection;
+import java.util.Date;
+import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,9 +24,12 @@ import org.objectquery.persistence.engine.ClassFactory;
 import org.objectquery.persistence.engine.PersistenceException;
 import org.objectquery.persistence.engine.PersistenceKeeper;
 import org.objectquery.persistence.engine.PersistentObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JavassistClassFactory implements ClassFactory {
 
+	private static final Logger logger = LoggerFactory.getLogger(JavassistClassFactory.class);
 	private static final String IMPL_CLASS_SUFFIX = "$Impl";
 	private ClassPool classPoll;
 	private ClassLoader classLoader;
@@ -38,24 +46,25 @@ public class JavassistClassFactory implements ClassFactory {
 		this.classLoader = classLoader;
 		classPoll = new ClassPool();
 		classPoll.appendClassPath(new LoaderClassPath(classLoader));
-		addMetadata(new MetaClass("java.lang.Byte", true));
-		addMetadata(new MetaClass("java.lang.Character", true));
-		addMetadata(new MetaClass("java.lang.Boolean", true));
-		addMetadata(new MetaClass("java.lang.Short", true));
-		addMetadata(new MetaClass("java.lang.Integer", true));
-		addMetadata(new MetaClass("java.lang.Long", true));
-		addMetadata(new MetaClass("java.lang.Float", true));
-		addMetadata(new MetaClass("java.lang.Double", true));
-		addMetadata(new MetaClass("java.util.Date", true));
-		addMetadata(new MetaClass("java.lang.String", true));
-		addMetadata(new MetaClass(Byte.TYPE.getName(), true));
-		addMetadata(new MetaClass(Character.TYPE.getName(), true));
-		addMetadata(new MetaClass(Boolean.TYPE.getName(), true));
-		addMetadata(new MetaClass(Short.TYPE.getName(), true));
-		addMetadata(new MetaClass(Integer.TYPE.getName(), true));
-		addMetadata(new MetaClass(Long.TYPE.getName(), true));
-		addMetadata(new MetaClass(Float.TYPE.getName(), true));
-		addMetadata(new MetaClass(Double.TYPE.getName(), true));
+		addMetadata(new MetaClass("java.lang.Byte", true, Byte.class));
+		addMetadata(new MetaClass("java.lang.Character", true, Character.class));
+		addMetadata(new MetaClass("java.lang.Boolean", true, Boolean.class));
+		addMetadata(new MetaClass("java.lang.Short", true, Short.class));
+		addMetadata(new MetaClass("java.lang.Integer", true, Integer.class));
+		addMetadata(new MetaClass("java.lang.Long", true, Long.class));
+		addMetadata(new MetaClass("java.lang.Float", true, Float.class));
+		addMetadata(new MetaClass("java.lang.Double", true, Double.class));
+		addMetadata(new MetaClass("java.util.Date", true, null));
+		addMetadata(new MetaClass("java.time.LocalDate", true, null));
+		addMetadata(new MetaClass("java.lang.String", true, null));
+		addMetadata(new MetaClass(Byte.TYPE.getName(), true, Byte.class));
+		addMetadata(new MetaClass(Character.TYPE.getName(), true, Character.class));
+		addMetadata(new MetaClass(Boolean.TYPE.getName(), true, Boolean.class));
+		addMetadata(new MetaClass(Short.TYPE.getName(), true, Short.class));
+		addMetadata(new MetaClass(Integer.TYPE.getName(), true, Integer.class));
+		addMetadata(new MetaClass(Long.TYPE.getName(), true, Long.class));
+		addMetadata(new MetaClass(Float.TYPE.getName(), true, Float.class));
+		addMetadata(new MetaClass(Double.TYPE.getName(), true, Double.class));
 	}
 
 	public Class<?> getRealClass(Class<?> interfa) {
@@ -85,6 +94,9 @@ public class JavassistClassFactory implements ClassFactory {
 				makeRealClass(inter, newMetaClass, newClass);
 				realClass = newClass.toClass(classLoader, null);
 				newMetaClass.setRealClass(realClass);
+				FileOutputStream out = new FileOutputStream("ToInspect.class");
+				newClass.toBytecode(new DataOutputStream(out));
+				out.close();
 				newMetaClass.setType(classLoader.loadClass(interName));
 			} else {
 				MetaClass metaClass = getOrCreateMetaClass(interName);
@@ -187,8 +199,22 @@ public class JavassistClassFactory implements ClassFactory {
 		StringBuilder body = new StringBuilder("{");
 		for (MetaField metaField : metaClass.getFields()) {
 			MetaFieldDec dec = metaField.getDeclaration();
-			body.append(dec.getName()).append("= (").append(dec.getType().getName()).append(")__$persistence.loadField(\"").append(dec.getName());
-			body.append("\",").append(metaField.getId()).append(");\n");
+
+			final String fieldName = dec.getName();
+			final String fieldType = dec.getType().getName();
+			if (metaField.isPrimitive() && metaField.getDeclaration().getType().getPrimitiveCastClass() != null) {
+				String boxType = metaField.getDeclaration().getType().getPrimitiveCastClass().getName();
+
+				body.append("{").append(boxType).append(" var1 = (").append(boxType);
+				body.append(")__$persistence.loadField(\"").append(fieldName);
+				body.append("\",").append(metaField.getId()).append(");");
+				body.append("if (var1 != null) this.").append(fieldName).append("= var1.");
+				body.append(fieldType).append("Value();}\n");
+
+			} else {
+				body.append(fieldName).append("= (").append(fieldType).append(")__$persistence.loadField(\"").append(fieldName);
+				body.append("\",").append(metaField.getId()).append(");\n");
+			}
 		}
 		body.append("}");
 		CtMethod loadMethodImpl = CtNewMethod.make(loadMethod.getReturnType(), loadMethod.getName(), loadMethod.getParameterTypes(),
@@ -199,6 +225,8 @@ public class JavassistClassFactory implements ClassFactory {
 		CtMethod getKeeperMethodImpl = CtNewMethod.make(getKeeperMethod.getReturnType(), getKeeperMethod.getName(), getKeeperMethod.getParameterTypes(),
 				getKeeperMethod.getExceptionTypes(), "return __$persistence;", newClass);
 		newClass.addMethod(getKeeperMethodImpl);
+		if (logger.isDebugEnabled())
+			logger.debug("complete class{}", newClass.toString());
 
 	}
 
@@ -217,18 +245,69 @@ public class JavassistClassFactory implements ClassFactory {
 	}
 
 	private CtMethod createGetter(CtField field, MetaField metaField) throws CannotCompileException, NotFoundException {
-		String body = "{__$persistence.checkLoad(); return ($r)__$persistence.onFieldRead(\"" + field.getName() + "\"," + metaField.getId() + ","
-				+ field.getName() + ");}";
+		StringBuilder body = new StringBuilder("{__$persistence.checkLoad(); return ($r)__$persistence.onFieldRead(\"");
+		body.append(field.getName()).append("\",");
+		body.append(metaField.getId()).append(",");
+		if (metaField.isPrimitive() && metaField.getDeclaration().getType().getPrimitiveCastClass() != null) {
+			final String name = metaField.getDeclaration().getType().getPrimitiveCastClass().getName();
+			body.append("").append(name).append(".valueOf(");
+			body.append(field.getName()).append("));}");
+		} else
+			body.append(field.getName()).append(");}");
+		if (logger.isDebugEnabled())
+			logger.debug("create getter {}", body.toString());
 		CtMethod method = metaField.getDeclaration().getGetter();
-		return CtNewMethod.make(field.getType(), method.getName(), method.getParameterTypes(), method.getExceptionTypes(), body, field.getDeclaringClass());
+		return CtNewMethod.make(field.getType(), method.getName(), method.getParameterTypes(), method.getExceptionTypes(), body.toString(),
+				field.getDeclaringClass());
 	}
 
 	private CtMethod createSetter(CtField field, MetaField metaField) throws CannotCompileException, NotFoundException {
-		String body = "{__$persistence.checkLoad(); " + field.getName() + "= (" + field.getType().getName() + ")__$persistence.onFieldWrite(\""
-				+ field.getName() + "\"," + metaField.getId() + "," + field.getName() + ",$1);}";
+		final String body;
+		if (metaField.isPrimitive() && metaField.getDeclaration().getType().getPrimitiveCastClass() != null)
+			body = codeForLiteralSetter(field, metaField);
+		else
+			body = codeForSetter(field, metaField);
+
+		if (logger.isDebugEnabled())
+			logger.debug("create setter {}", body);
+		
 		CtMethod method = metaField.getDeclaration().getSetter();
 		return CtNewMethod.make(method.getReturnType(), method.getName(), method.getParameterTypes(), method.getExceptionTypes(), body,
 				field.getDeclaringClass());
+	}
+
+	private String codeForSetter(CtField field, MetaField metaField) throws NotFoundException {
+		StringBuilder body = new StringBuilder("{__$persistence.checkLoad(); ");
+		body.append("this.").append(field.getName()).append("= (");
+		body.append(field.getType().getName());
+		body.append(")__$persistence.onFieldWrite(\"");
+		body.append(field.getName()).append("\",");
+		body.append(metaField.getId()).append(",");
+		body.append(field.getName());
+		body.append(",$1);}");
+		return body.toString();
+	}
+
+	private String codeForLiteralSetter(CtField field, MetaField metaField) throws NotFoundException {
+		final StringBuilder body = new StringBuilder("{__$persistence.checkLoad(); ");
+		final String boxTypeName = metaField.getDeclaration().getType().getPrimitiveCastClass().getName();
+		final String typeName = field.getType().getName();
+		final String fieldName = field.getName();
+		body.append(boxTypeName);
+		body.append(" var1 = (");
+		body.append(boxTypeName);
+		body.append(")__$persistence.onFieldWrite(\"");
+		body.append(fieldName).append("\",");
+		body.append(metaField.getId()).append(",");
+		body.append("").append(boxTypeName).append(".valueOf(");
+		body.append(fieldName).append(")");
+		body.append(", ").append(boxTypeName).append(".valueOf($1));");
+		body.append(" if ( var1 != null ){ ");
+		body.append(typeName);
+		body.append(" var2 = ");
+		body.append("var1.").append(typeName).append("Value();");
+		body.append("this.").append(fieldName).append("=").append("var2;}}");
+		return body.toString();
 	}
 
 	private CtMethod createAddTo(CtField field, MetaField metaField) throws CannotCompileException, NotFoundException {
@@ -279,4 +358,5 @@ public class JavassistClassFactory implements ClassFactory {
 		}
 		return metaClass;
 	}
+
 }
